@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            color: rgb(241, 246, 246)
+        }
+        
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: url('login.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        
+        input,
+        textarea,
+        button {
+            width: 100%;
+            padding: 5px;
+            margin: 5px 0;
+            color: rgb(6, 8, 8)
+        }
+        
+        #preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px 0;
+            border-radius: 15px;
+        }
+        
+        #responseMsg {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Contact Form</h2>
+        <form id="myForm">
+            <label>Name:</label>
+            <input type="text" name="name" required>
+
+            <label>Phone Number:</label>
+            <input type="text" name="number" required>
+
+            <label>Address:</label>
+            <textarea name="address" required></textarea>
+
+            <label>Problem:</label>
+            <textarea name="problem" required></textarea>
+
+            <label>Upload Picture:</label>
+            <input type="file" id="picture" name="picture" accept="image/*">
+
+            <img id="preview" style="display:none;">
+
+            <br><br>
+            <button type="submit">Submit</button>
+        </form>
+        <p id="responseMsg"></p>
+    </div>
+
+    <script>
+        const scriptURL = "https://script.google.com/macros/s/AKfycbzr83GugREdm7Cij2pC0hHedyFb7jx2_o34_DolIMtrkn3eW6WrTUG2zDRdvvrNTt0MJA/exec";
+        const form = document.getElementById("myForm");
+        const responseMsg = document.getElementById("responseMsg");
+
+
+        // Image preview
+        document.getElementById("picture").addEventListener("change", function() {
+            let file = this.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById("preview").src = e.target.result;
+                    document.getElementById("preview").style.display = "block";
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        form.addEventListener("submit", async(e) => {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const pictureFile = form.picture.files[0];
+
+            if (pictureFile) {
+                try {
+                    const base64 = await fileToBase64(pictureFile);
+
+                    // IMPORTANT FIX: match Apps Script key
+                    formData.set('img', base64);
+
+                } catch (error) {
+                    console.error('Error converting file:', error);
+                }
+            }
+
+
+
+            fetch(scriptURL, {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(result => {
+                    responseMsg.innerHTML = "Submitted Successfully!";
+                    responseMsg.style.color = "green";
+                    form.reset();
+                    document.getElementById("preview").style.display = "none";
+                })
+                .catch(error => {
+                    responseMsg.innerHTML = "Error submitting form";
+                    responseMsg.style.color = "red";
+                    console.error(error);
+                });
+        });
+
+        // Helper function to convert file to Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+    </script>
+</body>
+
+</html>
